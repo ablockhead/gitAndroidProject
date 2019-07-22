@@ -22,7 +22,7 @@ dependencies {
 //    testImplementation 'com.squareup.leakcanary:leakcanary-android-no-op:1.5.1'
 //    debugImplementation 'com.squareup.leakcanary:leakcanary-android:1.5.1'
 //    releaseImplementation 'com.squareup.leakcanary:leakcanary-android-no-op:1.5.1'
-//    implementation 'com.android.support:recyclerview-v7:27.1.1'
-//    implementation "com.android.support:appcompat-v7:${cfgs.androidSupportVersion}"
-//    implementation project(path: ':picture_library')
+    implementation 'com.android.support:recyclerview-v7:27.1.1'
+    implementation "com.android.support:appcompat-v7:${cfgs.androidSupportVersion}"
+    implementation project(path: ':picture_library')
 }
