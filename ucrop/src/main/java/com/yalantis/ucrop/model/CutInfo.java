@@ -19,6 +19,7 @@ public class CutInfo implements Serializable {
     private int imageHeight;
     private float resultAspectRatio;
     private boolean isCut;
+    private int clickIndex;
 
     public CutInfo() {
     }
@@ -26,6 +27,14 @@ public class CutInfo implements Serializable {
     public CutInfo(String path, boolean isCut) {
         this.path = path;
         this.isCut = isCut;
+    }
+
+    public int getClickIndex() {
+        return clickIndex;
+    }
+
+    public void setClickIndex(int clickIndex) {
+        this.clickIndex = clickIndex;
     }
 
     public String getPath() {

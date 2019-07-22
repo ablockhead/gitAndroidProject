@@ -8,9 +8,10 @@ buildscript {
             url 'https://maven.google.com/'
             name 'Google'
         }
+        google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
+        classpath 'com.android.tools.build:gradle:3.4.1'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -27,6 +28,9 @@ allprojects {
             url 'https://maven.google.com/'
             name 'Google'
         }
+        maven { url "http://maven.aliyun.com/nexus/content/groups/public/" }
+        maven { url "https://dl.google.com/dl/android/maven2/" }
+        maven { url "https://jitpack.io" }
     }
 }
 

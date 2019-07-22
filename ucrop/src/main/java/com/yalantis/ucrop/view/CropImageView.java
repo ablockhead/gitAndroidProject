@@ -86,6 +86,27 @@ public class CropImageView extends TransformImageView {
     }
 
     /**
+     * Cancels all current animations and sets image to fill crop area (without animation).
+     * Then creates and executes {@link BitmapCropTask} with proper parameters.
+     */
+    public void quikely(@NonNull Bitmap.CompressFormat compressFormat,Bitmap bitmap, int compressQuality,
+                                 @Nullable BitmapCropCallback cropCallback) {
+        cancelAllAnimations();
+        setImageToWrapCropBounds(false);
+
+        final ImageState imageState = new ImageState(
+                mCropRect, RectUtils.trapToRect(mCurrentImageCorners),
+                getCurrentScale(), getCurrentAngle());
+
+        final CropParameters cropParameters = new CropParameters(
+                mMaxResultImageSizeX, mMaxResultImageSizeY,
+                compressFormat, compressQuality,
+                getImageInputPath(), getImageOutputPath(), getExifInfo());
+
+        new BitmapCropTask(getContext(), bitmap, imageState, cropParameters, cropCallback).execute();
+    }
+
+    /**
      * @return - maximum scale value for current image and crop ratio
      */
     public float getMaxScale() {

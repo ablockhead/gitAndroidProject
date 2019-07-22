@@ -3,9 +3,11 @@ package com.yalantis.ucrop;
 import android.annotation.TargetApi;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.Drawable;
+import android.net.ProxyInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +24,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -34,11 +37,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.yalantis.ucrop.callback.BitmapCropCallback;
 import com.yalantis.ucrop.model.AspectRatio;
 import com.yalantis.ucrop.model.CutInfo;
 import com.yalantis.ucrop.util.FileUtils;
+import com.yalantis.ucrop.util.SaveImageUtil;
 import com.yalantis.ucrop.util.SelectedStateListDrawable;
 import com.yalantis.ucrop.view.CropImageView;
 import com.yalantis.ucrop.view.GestureCropImageView;
@@ -49,19 +54,25 @@ import com.yalantis.ucrop.view.widget.AspectRatioTextView;
 import com.yalantis.ucrop.view.widget.HorizontalProgressWheelView;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by Oleksii Shliama (https://github.com/shliama).
  */
 
 @SuppressWarnings("ConstantConditions")
-public class PictureMultiCuttingActivity extends AppCompatActivity {
+public class PictureMultiCuttingActivity extends AppCompatActivity implements PicturePhotoGalleryAdapter.OnItemClickListener {
 
     public static final int DEFAULT_COMPRESS_QUALITY = 90;
     public static final Bitmap.CompressFormat DEFAULT_COMPRESS_FORMAT = Bitmap.CompressFormat.PNG;
@@ -76,6 +87,7 @@ public class PictureMultiCuttingActivity extends AppCompatActivity {
     public @interface GestureTypes {
 
     }
+
 
     private static final String TAG = "UCropActivity";
 
@@ -110,11 +122,13 @@ public class PictureMultiCuttingActivity extends AppCompatActivity {
     private List<ViewGroup> mCropAspectRatioViews = new ArrayList<>();
     private TextView mTextViewRotateAngle, mTextViewScalePercent;
     private View mBlockingView;
-
     private Bitmap.CompressFormat mCompressFormat = DEFAULT_COMPRESS_FORMAT;
     private int mCompressQuality = DEFAULT_COMPRESS_QUALITY;
     private int[] mAllowedGestures = new int[]{SCALE, ROTATE, ALL};
     private List<CutInfo> cutInfos = new ArrayList<>();
+    private int maxClick = 0;
+    private int position = 0;
+    private Boolean is_user_position = false;
     /**
      * 是否可拖动裁剪框
      */
@@ -153,20 +167,33 @@ public class PictureMultiCuttingActivity extends AppCompatActivity {
         LinearLayoutManager mLayoutManager = new LinearLayoutManager(this);
         mLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
         recyclerView.setLayoutManager(mLayoutManager);
-        for (CutInfo info : cutInfos) {
-            info.setCut(false);
+        for (int i = 0; i < cutInfos.size(); i++) {
+            cutInfos.get(i).setCut(false);
         }
         cutInfos.get(cutIndex).setCut(true);
         adapter = new PicturePhotoGalleryAdapter(this, cutInfos);
+        adapter.setOnItemClickListener(this);
         recyclerView.setAdapter(adapter);
+    }
+
+    @Override
+    public void onClick(int position) {
+        if(cutIndex != position && maxClick+1 >= position ){
+            maxClick = maxClick+1 == position ? position:maxClick;
+            this.position = position;
+            cropAndSaveImage();
+            is_user_position = true;
+        }else{
+            Toast toast = Toast.makeText(PictureMultiCuttingActivity.this, "只可以点击下一张哦", Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.CENTER_VERTICAL, 0, -50);
+            toast.show();
+        }
+
     }
 
     @Override
     public boolean onCreateOptionsMenu(final Menu menu) {
         getMenuInflater().inflate(R.menu.ucrop_menu_activity, menu);
-
-        // Change crop & loader menu icons color to match the rest of the UI colors
-
         MenuItem menuItemLoader = menu.findItem(R.id.menu_loader);
         Drawable menuItemLoaderIcon = menuItemLoader.getIcon();
         if (menuItemLoaderIcon != null) {
@@ -201,6 +228,8 @@ public class PictureMultiCuttingActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.menu_crop) {
+//            directTailoring();
+            is_user_position = false;
             cropAndSaveImage();
         } else if (item.getItemId() == android.R.id.home) {
             onBackPressed();
@@ -215,6 +244,34 @@ public class PictureMultiCuttingActivity extends AppCompatActivity {
             mGestureCropImageView.cancelAllAnimations();
         }
     }
+//    /**
+//     * 直接裁剪
+//     */
+//    private void directTailoring(){
+//      for(int i = 0;i<cutInfos.size();i++){
+//          try {
+//                Bitmap bitmap = SaveImageUtil.getBitmap(cutInfos.get(i));
+//              int w = bitmap.getWidth();
+//              int h = bitmap.getHeight();
+//              int width = w > h ? h:w;
+//              int retX = (w - width)/2;
+//              int retY = (h - width)/2;
+//              Bitmap bitmap1 = Bitmap.createBitmap(bitmap,retX,retY,width,width,null,false);
+//              System.out.println(bitmap1+"'bitmap1bitmap1bitmap1bitmap1'");
+//              cutInfos.get(i).setCutPath(SaveImageUtil.saveBitMap(bitmap1));
+//              cutInfos.get(i).setCut(true);
+//              cutInfos.get(i).setOffsetX(retX);
+//              cutInfos.get(i).setOffsetY(retY);
+//              cutInfos.get(i).setImageWidth(w);
+//              cutInfos.get(i).setImageHeight(h);
+//          }catch (Exception e){
+//              e.printStackTrace();
+//          }
+//
+//      }
+//        setResult(RESULT_OK, new Intent().putExtra(UCropMulti.EXTRA_OUTPUT_URI_LIST, (Serializable) cutInfos));
+//        closeActivity();
+//    }
 
     /**
      * This method extracts all data from the incoming intent and setups views properly.
@@ -675,7 +732,9 @@ public class PictureMultiCuttingActivity extends AppCompatActivity {
 
             @Override
             public void onBitmapCropped(@NonNull Uri resultUri, int offsetX, int offsetY, int imageWidth, int imageHeight) {
+//                Toast.makeText(PictureMultiCuttingActivity.this,"啦啦啦",Toast.LENGTH_SHORT).show();
                 setResultUri(resultUri, mGestureCropImageView.getTargetAspectRatio(), offsetX, offsetY, imageWidth, imageHeight);
+
             }
 
             @Override
@@ -685,6 +744,7 @@ public class PictureMultiCuttingActivity extends AppCompatActivity {
             }
         });
     }
+
 
     protected void setResultUri(Uri uri, float resultAspectRatio, int offsetX, int offsetY, int imageWidth, int imageHeight) {
         try {
@@ -696,11 +756,10 @@ public class PictureMultiCuttingActivity extends AppCompatActivity {
             info.setOffsetY(offsetY);
             info.setImageWidth(imageWidth);
             info.setImageHeight(imageHeight);
-            cutIndex++;
-            if (cutIndex >= cutInfos.size()) {
-                setResult(RESULT_OK, new Intent()
-                        .putExtra(UCropMulti.EXTRA_OUTPUT_URI_LIST, (Serializable) cutInfos)
-                );
+            cutIndex = is_user_position ? position: cutIndex + 1;
+            maxClick = maxClick < cutIndex ? maxClick+1:maxClick;
+            if (maxClick >= cutInfos.size()) {
+                setResult(RESULT_OK, new Intent().putExtra(UCropMulti.EXTRA_OUTPUT_URI_LIST, (Serializable) cutInfos));
                 closeActivity();
             } else {
                 resetCutData();
@@ -708,8 +767,9 @@ public class PictureMultiCuttingActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
+
+
 
     /**
      * 重置裁剪参数

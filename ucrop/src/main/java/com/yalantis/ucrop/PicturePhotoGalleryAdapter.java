@@ -45,7 +45,11 @@ public class PicturePhotoGalleryAdapter extends RecyclerView.Adapter<PicturePhot
     private Context context;
     private List<CutInfo> list = new ArrayList<>();
     private LayoutInflater mInflater;
-
+    private OnItemClickListener onItemClickListener;
+    public PicturePhotoGalleryAdapter(){}
+    public void setOnItemClickListener(OnItemClickListener onItemClickListener ){
+        this.onItemClickListener=onItemClickListener;
+    }
     public PicturePhotoGalleryAdapter(Context context, List<CutInfo> list) {
         mInflater = LayoutInflater.from(context);
         this.context = context;
@@ -65,7 +69,16 @@ public class PicturePhotoGalleryAdapter extends RecyclerView.Adapter<PicturePhot
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(ViewHolder holder, final int position) {
+        holder.itemView.setTag(list.get(position).getClickIndex());
+        if(onItemClickListener !=null){
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    onItemClickListener.onClick(position);
+                }
+            });
+        }
         String path = "";
         CutInfo photoInfo = list.get(position);
         if (photoInfo != null) {
@@ -106,6 +119,10 @@ public class PicturePhotoGalleryAdapter extends RecyclerView.Adapter<PicturePhot
             mIvPhoto = (ImageView) view.findViewById(R.id.iv_photo);
             iv_dot = (ImageView) view.findViewById(R.id.iv_dot);
         }
+    }
+
+    public interface OnItemClickListener{
+        void onClick(int position);
     }
 
 }
