@@ -9,7 +9,7 @@ ext {
             ucropVersionCode     : 22,
             ucropVersionName     : "2.2.0-native",
 
-            //open version control
+            //open version controlandroidSupportVersion
             androidSupportVersion: "27.1.1",
             glide                : "4.5.0",
             rxjava               : "2.0.5",

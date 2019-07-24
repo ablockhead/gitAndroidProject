@@ -178,8 +178,10 @@ public class PictureMultiCuttingActivity extends AppCompatActivity implements Pi
 
     @Override
     public void onClick(int position) {
+        System.out.println("<<<<<<<<<<<<<<<<position"+position);
         if(cutIndex != position && maxClick+1 >= position ){
             maxClick = maxClick+1 == position ? position:maxClick;
+            System.out.println("<<<<<<<<<<<<<<<<maxClick"+maxClick);
             this.position = position;
             cropAndSaveImage();
             is_user_position = true;
@@ -747,6 +749,7 @@ public class PictureMultiCuttingActivity extends AppCompatActivity implements Pi
 
 
     protected void setResultUri(Uri uri, float resultAspectRatio, int offsetX, int offsetY, int imageWidth, int imageHeight) {
+        System.out.println("<<<<<<<<<<<<<<<<"+maxClick);
         try {
             CutInfo info = cutInfos.get(cutIndex);
             info.setCutPath(uri.getPath());
@@ -757,6 +760,7 @@ public class PictureMultiCuttingActivity extends AppCompatActivity implements Pi
             info.setImageWidth(imageWidth);
             info.setImageHeight(imageHeight);
             cutIndex = is_user_position ? position: cutIndex + 1;
+            maxClick = is_user_position ? maxClick: maxClick+1;
             maxClick = maxClick < cutIndex ? maxClick+1:maxClick;
             if (maxClick >= cutInfos.size()) {
                 setResult(RESULT_OK, new Intent().putExtra(UCropMulti.EXTRA_OUTPUT_URI_LIST, (Serializable) cutInfos));
